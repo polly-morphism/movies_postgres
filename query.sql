@@ -92,7 +92,7 @@ INSERT INTO query6(average)
 	 	LEFT JOIN genres
 	 	ON hasagenre.genreid=genres.genreid
 		WHERE genres.name='Comedy') AS ComedyMovies
-	LEFT JOIN ratings
+	INNER JOIN ratings
 	ON ComedyMovies.movieid = ratings.movieid
 	GROUP BY ComedyMovies.movieid;
 
