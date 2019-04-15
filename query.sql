@@ -6,6 +6,7 @@ DROP TABLE IF EXISTS query5 CASCADE;
 DROP TABLE IF EXISTS query6 CASCADE;
 DROP TABLE IF EXISTS query7 CASCADE;
 DROP TABLE IF EXISTS query8 CASCADE;
+DROP TABLE IF EXISTS query9 CASCADE;
 DROP TABLE IF EXISTS RomanceAndComedy CASCADE;
 DROP TABLE IF EXISTS RomanceMovies CASCADE;
 
@@ -20,7 +21,7 @@ INSERT INTO query1(name,moviecount)
 	LEFT JOIN genres
 	ON hasagenre.genreid = genres.genreid
 	GROUP BY name;
-
+	
 CREATE TABLE query2(
 	name TEXT,
 	rating NUMERIC
@@ -28,7 +29,7 @@ CREATE TABLE query2(
 
 INSERT INTO query2(name,rating)
 	SELECT name, avg_r
-	FROM
+	FROM 
 		(SELECT genreid, AVG(rating) AS avg_r
 		FROM ratings
 		INNER JOIN hasagenre
@@ -36,7 +37,7 @@ INSERT INTO query2(name,rating)
 		GROUP BY genreid) AS huyna
 	LEFT JOIN genres
 	ON huyna.genreid = genres.genreid;
-
+	
 CREATE TABLE query3(
 	title TEXT,
 	CountOfRatings BIGINT
@@ -44,12 +45,12 @@ CREATE TABLE query3(
 
 INSERT INTO query3(title,CountOfRatings)
 	SELECT title, CountOfRatings
-	FROM
+	FROM 
 		(SELECT movieid, COUNT(ratings) AS CountOfRatings
 		FROM ratings
 		GROUP BY movieid) AS huyna
 	LEFT JOIN movies
-	ON huyna.movieid = movies.movieid
+	ON huyna.movieid = movies.movieid 
 	WHERE CountOfRatings >= 10;
 
 CREATE TABLE query4(
@@ -59,7 +60,7 @@ CREATE TABLE query4(
 
 INSERT INTO query4(movieid,title)
 	SELECT movies.movieid, title
-	FROM
+	FROM 
 	 	(SELECT movieid
 		FROM hasagenre
 	 	LEFT JOIN genres
@@ -67,7 +68,7 @@ INSERT INTO query4(movieid,title)
 		WHERE genres.name='Comedy') AS ComedyMovies
 	LEFT JOIN movies
 	ON movies.movieid = ComedyMovies.movieid;
-
+	
 CREATE TABLE query5(
 	title TEXT,
 	average NUMERIC
@@ -86,15 +87,15 @@ CREATE TABLE query6(
 
 INSERT INTO query6(average)
 	SELECT AVG(rating)
-	FROM
-	 	(SELECT movieid
+	FROM 
+	 	(SELECT movieid, genres.genreid
 		FROM hasagenre
 	 	LEFT JOIN genres
 	 	ON hasagenre.genreid=genres.genreid
 		WHERE genres.name='Comedy') AS ComedyMovies
-	INNER JOIN ratings
+	INNER JOIN ratings 
 	ON ComedyMovies.movieid = ratings.movieid
-	GROUP BY ComedyMovies.movieid;
+	GROUP BY ComedyMovies.genreid;
 
 CREATE TABLE RomanceMovies(
 	movieid INT
@@ -102,7 +103,7 @@ CREATE TABLE RomanceMovies(
 
 INSERT INTO RomanceMovies(movieid)
 	SELECT movies.movieid
-	FROM
+	FROM 
 	 	(SELECT movieid
 		FROM hasagenre
 	 	LEFT JOIN genres
@@ -110,7 +111,7 @@ INSERT INTO RomanceMovies(movieid)
 		WHERE genres.name='Romance') AS RomanceMovies
 	LEFT JOIN movies
 	ON movies.movieid = RomanceMovies.movieid;
-
+	
 CREATE TABLE query7(
 	average NUMERIC
 );
@@ -122,10 +123,9 @@ INSERT INTO query7(average)
 		FROM RomanceMovies
 		INNER JOIN query4
 		ON query4.movieid = RomanceMovies.movieid) AS ComedyAndRomanceMovieid
-	INNER JOIN ratings
-	ON ComedyAndRomanceMovieid.movieid = ratings.movieid
-	GROUP BY ComedyAndRomanceMovieid.movieid;
-
+	INNER JOIN ratings 
+	ON ComedyAndRomanceMovieid.movieid = ratings.movieid;
+	
 CREATE TABLE RomanceAndComedy(
 	movieid INT
 );
@@ -135,22 +135,35 @@ INSERT INTO RomanceAndComedy(movieid)
 			FROM RomanceMovies
 			INNER JOIN query4
 			ON query4.movieid = RomanceMovies.movieid;
-
+		
 CREATE TABLE query8(
 	average NUMERIC
 );
-
+	
 
 INSERT INTO query8(average)
   SELECT AVG(rating)
   FROM
-    (SELECT RomanceMovies.movieid
+    (SELECT DISTINCT RomanceMovies.movieid, genreid
     FROM RomanceMovies
     LEFT JOIN hasagenre
       ON RomanceMovies.movieid = hasagenre.movieid
-    LEFT JOIN genres
-      ON genres.genreid = hasagenre.genreid
-    WHERE name <> 'Comedy') AS RomanceNotComedy
+    LEFT JOIN RomanceAndComedy
+      ON RomanceMovies.movieid = RomanceAndComedy.movieid
+      WHERE RomanceAndComedy.movieid IS NULL) AS RomanceNotComedy
   INNER JOIN ratings
-  ON RomanceNotComedy.movieid = ratings.movieid
-  GROUP BY RomanceNotComedy.movieid;
+  ON RomanceNotComedy.movieid = ratings.movieid;
+
+CREATE TABLE query9(
+	movieid INT,
+	rating NUMERIC
+);
+
+INSERT INTO query9(movieid, rating)
+	SELECT movieid, rating 
+	FROM ratings
+	WHERE userid = :v1; 
+	
+
+
+
